@@ -807,7 +807,10 @@
 
     for (const repository of repositories) {
       const item = document.createElement("li");
-      item.textContent = repository;
+      const link = document.createElement("a");
+      link.href = `https://github.com/${repository}`;
+      link.textContent = repository;
+      item.append(link);
       document.querySelector("#repository-list").append(item);
     }
 
