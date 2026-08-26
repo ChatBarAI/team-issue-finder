@@ -100,7 +100,7 @@
       line-height: 1.2;
     }
 
-    .field { margin-bottom: 16px; }
+    .field { margin-bottom: 8px; }
 
     .filter-row {
       display: grid;
@@ -275,8 +275,11 @@
 
     .sort-control {
       display: flex;
+      flex-direction: column;
       align-self: center;
+      align-items: flex-end;
       justify-content: flex-end;
+      gap: 6px;
       margin-left: auto;
     }
 
@@ -286,7 +289,7 @@
       padding: 5px 10px;
       border-color: var(--border);
       border-radius: 999px;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
     }
 
     button {
@@ -310,6 +313,13 @@
 
     button[type="button"]:hover {
       background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    .sort-trigger[aria-pressed="true"],
+    .sort-trigger[aria-pressed="true"]:hover {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
     }
 
     .label-groups {
@@ -505,6 +515,15 @@
             >
               Order: <span id="sort-summary">Recently updated</span>
             </button>
+            <button
+              class="sort-trigger"
+              type="button"
+              id="set-unassigned"
+              aria-controls="assignee"
+              aria-pressed="false"
+            >
+              Unassigned only
+            </button>
           </div>
         </div>
       </div>
@@ -561,19 +580,25 @@
             >?
               <span class="help-tooltip-text" id="assignee-help" role="tooltip">
                 Enter the person's GitHub username (login), not their display name.
-                Use @me to find issues assigned to your signed-in GitHub account.
+                Use @me for your signed-in GitHub account, or unassigned for
+                issues that have no assignee.
               </span>
             </span>
           </div>
           <input
             id="assignee"
             name="assignee"
-            placeholder="GitHub username or @me"
+            list="assignee-suggestions"
+            placeholder="Username, @me, or unassigned"
             autocomplete="off"
             autocapitalize="none"
             enterkeyhint="go"
             spellcheck="false"
           >
+          <datalist id="assignee-suggestions">
+            <option value="@me"></option>
+            <option value="unassigned"></option>
+          </datalist>
         </div>
       </div>
 
@@ -671,6 +696,7 @@
     const combinedLabelHelp = document.querySelector("#combined-label-help");
     const labelGroups = document.querySelector("#label-groups");
     const assigneeInput = document.querySelector("#assignee");
+    const setUnassignedButton = document.querySelector("#set-unassigned");
     const openSortButton = document.querySelector("#open-sort");
     const sortDialog = document.querySelector("#sort-dialog");
     const sortSummary = document.querySelector("#sort-summary");
@@ -692,7 +718,22 @@
     const getLabelMatch = () => form.elements["label-match"].value;
     const getIssueState = () => form.elements.state.value;
 
-    assigneeInput.addEventListener("input", () => assigneeInput.setCustomValidity(""));
+    const syncUnassignedButton = () => {
+      const isUnassigned = assigneeInput.value.trim().toLowerCase() === "unassigned";
+      setUnassignedButton.setAttribute("aria-pressed", String(isUnassigned));
+    };
+
+    assigneeInput.addEventListener("input", () => {
+      assigneeInput.setCustomValidity("");
+      syncUnassignedButton();
+    });
+
+    setUnassignedButton.addEventListener("click", () => {
+      const isUnassigned = assigneeInput.value.trim().toLowerCase() === "unassigned";
+      assigneeInput.value = isUnassigned ? "" : "unassigned";
+      assigneeInput.setCustomValidity("");
+      syncUnassignedButton();
+    });
 
     document.addEventListener("keydown", event => {
       const hasModifier = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
@@ -819,14 +860,16 @@
       statusMessage.textContent = "";
 
       const typedAssignee = assigneeInput.value.trim();
-      const assignee = typedAssignee.toLowerCase() === "@me"
+      const normalizedAssignee = typedAssignee.toLowerCase();
+      const isUnassigned = normalizedAssignee === "unassigned";
+      const assignee = normalizedAssignee === "@me"
         ? "@me"
         : typedAssignee.replace(/^@/, "");
-      const isValidAssignee = !typedAssignee || assignee === "@me" ||
+      const isValidAssignee = !typedAssignee || isUnassigned || assignee === "@me" ||
         /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(assignee);
 
       if (!isValidAssignee) {
-        assigneeInput.setCustomValidity("Enter a GitHub username or @me.");
+        assigneeInput.setCustomValidity("Enter a GitHub username, @me, or unassigned.");
         assigneeInput.reportValidity();
         return null;
       }
@@ -844,7 +887,11 @@
       const stateQuery = issueState === "all"
         ? ""
         : ` state:${issueState}`;
-      const assigneeQuery = assignee ? ` assignee:${assignee}` : "";
+      const assigneeQuery = isUnassigned
+        ? " no:assignee"
+        : assignee
+          ? ` assignee:${assignee}`
+          : "";
       const sortQuery = ` sort:${selectedSort}`;
 
       // Escaping quotes and backslashes keeps typed labels inside the label
