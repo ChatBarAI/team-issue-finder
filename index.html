@@ -37,43 +37,193 @@
 
     * { box-sizing: border-box; }
 
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     body {
-      min-height: 100vh;
       margin: 0;
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      padding: 8px;
       background: var(--bg);
       color: var(--text);
       font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     main {
-      width: min(100%, 620px);
-      padding: clamp(24px, 5vw, 42px);
+      width: min(100%, 720px);
+      margin: 0 auto;
+      padding: clamp(18px, 3vw, 28px);
       border: 1px solid var(--border);
       border-radius: 14px;
       background: var(--panel);
       box-shadow: var(--shadow);
     }
 
+    .page-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .page-title {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-logo {
+      display: block;
+      flex: 0 0 auto;
+      width: clamp(42px, 9vw, 54px);
+      height: auto;
+    }
+
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(1.7rem, 5vw, 2.25rem);
+      margin: 0;
+      font-size: clamp(1.25rem, 3.5vw, 1.65rem);
       line-height: 1.2;
     }
 
-    .intro {
-      margin: 0 0 28px;
-      color: var(--muted);
+    .field { margin-bottom: 16px; }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
+      gap: 18px;
+      margin-bottom: 16px;
     }
 
-    .field { margin-bottom: 20px; }
+    .filter-row .field { margin-bottom: 0; }
+
+    .field-help {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    [hidden] { display: none !important; }
 
     label {
       display: block;
       margin-bottom: 7px;
       font-weight: 600;
+    }
+
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 7px;
+    }
+
+    .field-label-row label { margin-bottom: 0; }
+
+    .match-mode {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .match-mode legend {
+      margin-bottom: 7px;
+      font-weight: 600;
+    }
+
+    .help-tooltip {
+      position: relative;
+      display: inline-grid;
+      width: 18px;
+      height: 18px;
+      margin-left: 4px;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--muted);
+      cursor: help;
+      font-size: 0.72rem;
+      line-height: 1;
+      vertical-align: 1px;
+    }
+
+    .help-tooltip:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 45%, transparent);
+      outline-offset: 2px;
+    }
+
+    .help-tooltip-text {
+      position: absolute;
+      z-index: 2;
+      top: calc(100% + 8px);
+      left: 50%;
+      width: max-content;
+      max-width: min(280px, calc(100vw - 48px));
+      padding: 7px 9px;
+      transform: translateX(-50%);
+      border-radius: 6px;
+      background: #24292f;
+      box-shadow: var(--shadow);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 400;
+      line-height: 1.35;
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .standard-label-tooltip {
+      right: 0;
+      left: auto;
+      width: min(460px, calc(100vw - 48px));
+      max-width: none;
+      transform: none;
+    }
+
+    .standard-label-tooltip span {
+      display: block;
+      margin-top: 5px;
+    }
+
+    .help-tooltip:hover .help-tooltip-text,
+    .help-tooltip:focus .help-tooltip-text {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .match-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+    }
+
+    .match-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      cursor: pointer;
+      font-weight: 400;
+    }
+
+    .match-option input {
+      width: 17px;
+      height: 17px;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      accent-color: var(--accent);
     }
 
     input,
@@ -104,8 +254,34 @@
     .buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 26px;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .match-sort-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px 16px;
+    }
+
+    .match-sort-row .match-mode { flex: 1 1 400px; }
+
+    .sort-control {
+      display: flex;
+      align-self: center;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .sort-trigger {
+      width: auto;
+      min-height: 34px;
+      padding: 5px 10px;
+      border-color: var(--border);
+      border-radius: 999px;
+      font-size: 0.82rem;
     }
 
     button {
@@ -131,12 +307,101 @@
       background: color-mix(in srgb, var(--accent) 10%, transparent);
     }
 
+    .label-groups {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .label-group {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .label-group legend {
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .label-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .label-pill {
+      width: auto;
+      min-height: 30px;
+      padding: 4px 10px;
+      border-color: var(--border);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+      color: var(--text);
+      font-size: 0.78rem;
+      line-height: 1.2;
+    }
+
+    .label-pill:hover {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .label-pill[aria-pressed="true"] {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
     #status {
       min-height: 24px;
       margin: 14px 0 0;
       color: var(--success);
       text-align: center;
     }
+
+    #status:empty { display: none; }
+
+    dialog {
+      width: min(92vw, 460px);
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      color: var(--text);
+    }
+
+    dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+
+    dialog h2 {
+      margin: 0 0 16px;
+      font-size: 1.2rem;
+    }
+
+    .sort-options {
+      display: grid;
+      gap: 11px;
+    }
+
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    #apply-sort {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    #apply-sort:hover { background: var(--accent-hover); }
 
     details {
       margin-top: 24px;
@@ -148,37 +413,155 @@
     ul { padding-left: 22px; }
 
     @media (max-width: 480px) {
+      .filter-row { grid-template-columns: 1fr; }
       .buttons { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main>
-    <h1>Team Issue Finder</h1>
-    <p class="intro">Find issues with the same label across all four Chatbar repositories.</p>
+    <div class="page-heading">
+      <div class="page-title">
+        <h1>ChatBar AI Pte - Team Issue Finder</h1>
+        <span
+          class="help-tooltip"
+          tabindex="0"
+          aria-label="Standard issue labels"
+          aria-describedby="standard-label-help"
+        >?
+          <span
+            class="help-tooltip-text standard-label-tooltip"
+            id="standard-label-help"
+            role="tooltip"
+          >
+            <strong>Use these exact labels:</strong>
+            <span>Announcements</span>
+            <span>Priority: High · Priority: Low · Priority: Medium</span>
+            <span>Status: Backlog · Status: Blocked · Status: Done · Status: In-progress · Status: Review</span>
+            <span>Team: Business · Team: Client · Team: Legal · Team: Marketing · Team: Product</span>
+            <span>WorkType: Bug · WorkType: Design · WorkType: Documentation · WorkType: Enhancement · WorkType: Feature · WorkType: Legal · WorkType: Research</span>
+          </span>
+        </span>
+      </div>
+      <img
+        class="page-logo"
+        src="assets/logo-icon.webp"
+        width="320"
+        height="320"
+        alt="ChatBar AI logo"
+      >
+    </div>
 
     <form id="issue-search">
       <div class="field">
-        <label for="label">Issue label</label>
-        <input
-          id="label"
-          name="label"
-          list="label-suggestions"
-          placeholder="Start typing or choose a label"
-          autocomplete="off"
-          required
-          autofocus
-        >
-        <datalist id="label-suggestions"></datalist>
+        <div class="match-sort-row">
+          <fieldset class="match-mode">
+            <legend>
+              Label matching
+              <span
+                class="help-tooltip"
+                tabindex="0"
+                aria-label="About label matching"
+                aria-describedby="label-match-help"
+              >?
+                <span class="help-tooltip-text" id="label-match-help" role="tooltip">
+                  Choose one label, or switch modes to combine labels.
+                </span>
+              </span>
+            </legend>
+            <div class="match-options" id="label-match-options">
+              <label class="match-option">
+                <input type="radio" name="label-match" value="single" checked>
+                Single
+              </label>
+              <label class="match-option">
+                <input type="radio" name="label-match" value="all">
+                All
+              </label>
+              <label class="match-option">
+                <input type="radio" name="label-match" value="any">
+                Any
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="sort-control">
+            <button
+              class="sort-trigger"
+              type="button"
+              id="open-sort"
+              aria-haspopup="dialog"
+            >
+              Order: <span id="sort-summary">Recently updated</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="field">
-        <label for="state">Issue state</label>
-        <select id="state" name="state">
-          <option value="open" selected>Open</option>
-          <option value="closed">Closed</option>
-          <option value="all">Open and closed</option>
-        </select>
+        <div id="single-label-entry">
+          <label for="label">Issue label</label>
+          <input
+            id="label"
+            name="label"
+            list="label-suggestions"
+            placeholder="Start typing or choose a label"
+            autocomplete="off"
+            autofocus
+          >
+          <datalist id="label-suggestions"></datalist>
+        </div>
+        <p class="field-help" id="combined-label-help" hidden>
+          Select labels below. Click a selected label again to remove it.
+        </p>
+        <div class="label-groups" id="label-groups"></div>
+      </div>
+
+      <div class="filter-row">
+        <div class="field">
+          <fieldset class="match-mode">
+            <legend>Issue state</legend>
+            <div class="match-options">
+              <label class="match-option">
+                <input type="radio" name="state" value="open" checked>
+                Open
+              </label>
+              <label class="match-option">
+                <input type="radio" name="state" value="closed">
+                Closed
+              </label>
+              <label class="match-option">
+                <input type="radio" name="state" value="all">
+                Open and closed
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="assignee">Assigned to (optional)</label>
+            <span
+              class="help-tooltip"
+              tabindex="0"
+              aria-label="About the assignee"
+              aria-describedby="assignee-help"
+            >?
+              <span class="help-tooltip-text" id="assignee-help" role="tooltip">
+                Enter the person's GitHub username (login), not their display name.
+                Use @me to find issues assigned to your signed-in GitHub account.
+              </span>
+            </span>
+          </div>
+          <input
+            id="assignee"
+            name="assignee"
+            placeholder="GitHub username or @me"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+          >
+        </div>
       </div>
 
       <div class="buttons">
@@ -188,6 +571,43 @@
 
       <p id="status" role="status" aria-live="polite"></p>
     </form>
+
+    <dialog id="sort-dialog" aria-labelledby="sort-title">
+      <h2 id="sort-title">Order issues</h2>
+      <fieldset class="match-mode">
+        <legend class="visually-hidden">Choose an issue order</legend>
+        <div class="sort-options">
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="updated-desc" checked>
+            Recently updated
+          </label>
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="updated-asc">
+            Least recently updated
+          </label>
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="created-desc">
+            Newest created
+          </label>
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="created-asc">
+            Oldest created
+          </label>
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="comments-desc">
+            Most commented
+          </label>
+          <label class="match-option">
+            <input type="radio" name="sort-option" value="reactions-desc">
+            Most reactions
+          </label>
+        </div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button type="button" id="cancel-sort">Cancel</button>
+        <button type="button" id="apply-sort">Apply</button>
+      </div>
+    </dialog>
 
     <details>
       <summary>Repositories included</summary>
@@ -200,35 +620,164 @@
     const repositories = [
       "brodjustice/chatbar-ai-search-fullstack",
       "brodjustice/ai_search",
-      "brodjustice/chatbar_lms",
+      "ChatBarAI/ai_lms",
       "brodjustice/Chatbar-AI-Pte-Issue-Tracker"
     ];
 
-    // Replace these examples with your team's labels. Users can still type
-    // any label that is not included here.
+    // Canonical labels used by the team. Users can still type a label that
+    // is not included here when searching older or external issues.
     const suggestedLabels = [
-      "bug",
-      "documentation",
-      "duplicate",
-      "enhancement",
-      "good first issue",
-      "help wanted",
-      "invalid",
-      "question",
-      "wontfix"
+      "Announcements",
+      "Priority: High",
+      "Priority: Low",
+      "Priority: Medium",
+      "Status: Backlog",
+      "Status: Blocked",
+      "Status: Done",
+      "Status: In-progress",
+      "Status: Review",
+      "Team: Business",
+      "Team: Client",
+      "Team: Legal",
+      "Team: Marketing",
+      "Team: Product",
+      "WorkType: Bug",
+      "WorkType: Design",
+      "WorkType: Documentation",
+      "WorkType: Enhancement",
+      "WorkType: Feature",
+      "WorkType: Legal",
+      "WorkType: Research"
     ];
 
     const form = document.querySelector("#issue-search");
     const labelInput = document.querySelector("#label");
-    const stateSelect = document.querySelector("#state");
+    const labelMatchOptions = document.querySelector("#label-match-options");
+    const labelMatchHelp = document.querySelector("#label-match-help");
+    const singleLabelEntry = document.querySelector("#single-label-entry");
+    const combinedLabelHelp = document.querySelector("#combined-label-help");
+    const labelGroups = document.querySelector("#label-groups");
+    const assigneeInput = document.querySelector("#assignee");
+    const openSortButton = document.querySelector("#open-sort");
+    const sortDialog = document.querySelector("#sort-dialog");
+    const sortSummary = document.querySelector("#sort-summary");
+    const cancelSortButton = document.querySelector("#cancel-sort");
+    const applySortButton = document.querySelector("#apply-sort");
     const copyButton = document.querySelector("#copy-link");
     const statusMessage = document.querySelector("#status");
+    const sectionPills = new Map();
+    const selectedLabels = new Set();
+    const sortLabels = {
+      "updated-desc": "Recently updated",
+      "updated-asc": "Least recently updated",
+      "created-desc": "Newest created",
+      "created-asc": "Oldest created",
+      "comments-desc": "Most commented",
+      "reactions-desc": "Most reactions"
+    };
+    let selectedSort = "updated-desc";
+    const getLabelMatch = () => form.elements["label-match"].value;
+    const getIssueState = () => form.elements.state.value;
+
+    assigneeInput.addEventListener("input", () => assigneeInput.setCustomValidity(""));
+
+    openSortButton.addEventListener("click", () => {
+      sortDialog.querySelector(`[name="sort-option"][value="${selectedSort}"]`).checked = true;
+      sortDialog.showModal();
+    });
+
+    cancelSortButton.addEventListener("click", () => sortDialog.close());
+
+    applySortButton.addEventListener("click", () => {
+      const selectedOption = sortDialog.querySelector('[name="sort-option"]:checked');
+      selectedSort = selectedOption.value;
+      sortSummary.textContent = sortLabels[selectedSort];
+      sortDialog.close();
+    });
 
     for (const label of suggestedLabels) {
       const option = document.createElement("option");
       option.value = label;
       document.querySelector("#label-suggestions").append(option);
+
+      const separatorIndex = label.indexOf(": ");
+      const prefix = separatorIndex === -1 ? "General" : label.slice(0, separatorIndex);
+      const sectionName = prefix === "WorkType" ? "Work type" : prefix;
+      const pillText = separatorIndex === -1 ? label : label.slice(separatorIndex + 2);
+
+      if (!sectionPills.has(sectionName)) {
+        const group = document.createElement("fieldset");
+        group.className = "label-group";
+
+        const legend = document.createElement("legend");
+        legend.textContent = sectionName;
+        group.append(legend);
+
+        const pills = document.createElement("div");
+        pills.className = "label-pills";
+        group.append(pills);
+        labelGroups.append(group);
+        sectionPills.set(sectionName, pills);
+      }
+
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "label-pill";
+      pill.textContent = pillText;
+      pill.dataset.label = label;
+      pill.setAttribute("aria-label", label);
+      pill.setAttribute("aria-pressed", "false");
+      pill.addEventListener("click", () => {
+        if (getLabelMatch() === "single") {
+          selectedLabels.clear();
+          selectedLabels.add(label);
+          labelInput.value = label;
+        } else if (selectedLabels.has(label)) {
+          selectedLabels.delete(label);
+        } else {
+          selectedLabels.add(label);
+        }
+        syncSelectedLabel();
+      });
+      sectionPills.get(sectionName).append(pill);
     }
+
+    function syncSelectedLabel() {
+      for (const pill of labelGroups.querySelectorAll(".label-pill")) {
+        pill.setAttribute("aria-pressed", String(selectedLabels.has(pill.dataset.label)));
+      }
+    }
+
+    labelInput.addEventListener("input", () => {
+      selectedLabels.clear();
+      const typedLabel = labelInput.value.trim();
+      if (suggestedLabels.includes(typedLabel)) selectedLabels.add(typedLabel);
+      syncSelectedLabel();
+    });
+
+    labelMatchOptions.addEventListener("change", () => {
+      const selectedMatch = getLabelMatch();
+      const isSingleLabel = selectedMatch === "single";
+      singleLabelEntry.hidden = !isSingleLabel;
+      combinedLabelHelp.hidden = isSingleLabel;
+      labelInput.disabled = !isSingleLabel;
+      statusMessage.textContent = "";
+
+      labelMatchHelp.textContent = selectedMatch === "all"
+        ? "Results must have every selected label."
+        : selectedMatch === "any"
+          ? "Results may have any selected label."
+          : "Choose one label, or switch modes to combine labels.";
+
+      if (isSingleLabel && selectedLabels.size) {
+        const firstSelectedLabel = selectedLabels.values().next().value;
+        selectedLabels.clear();
+        selectedLabels.add(firstSelectedLabel);
+        labelInput.value = firstSelectedLabel;
+      }
+
+      syncSelectedLabel();
+    });
 
     for (const repository of repositories) {
       const item = document.createElement("li");
@@ -237,24 +786,50 @@
     }
 
     function buildGitHubUrl() {
-      const label = labelInput.value.trim();
-      if (!label) {
-        labelInput.reportValidity();
+      statusMessage.textContent = "";
+
+      const typedAssignee = assigneeInput.value.trim();
+      const assignee = typedAssignee.toLowerCase() === "@me"
+        ? "@me"
+        : typedAssignee.replace(/^@/, "");
+      const isValidAssignee = !typedAssignee || assignee === "@me" ||
+        /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(assignee);
+
+      if (!isValidAssignee) {
+        assigneeInput.setCustomValidity("Enter a GitHub username or @me.");
+        assigneeInput.reportValidity();
         return null;
       }
+
+      const selectedMatch = getLabelMatch();
+      const labels = selectedMatch === "single"
+        ? [labelInput.value.trim()].filter(Boolean)
+        : [...selectedLabels];
 
       const repositoryQuery = repositories
         .map(repository => `repo:${repository}`)
         .join(" OR ");
 
-      const stateQuery = stateSelect.value === "all"
+      const issueState = getIssueState();
+      const stateQuery = issueState === "all"
         ? ""
-        : ` state:${stateSelect.value}`;
+        : ` state:${issueState}`;
+      const assigneeQuery = assignee ? ` assignee:${assignee}` : "";
+      const sortQuery = ` sort:${selectedSort}`;
 
-      // Escaping quotes and backslashes keeps a typed label inside the
-      // label qualifier rather than allowing it to alter the search query.
-      const safeLabel = label.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-      const query = `is:issue${stateQuery} (${repositoryQuery}) label:"${safeLabel}"`;
+      // Escaping quotes and backslashes keeps typed labels inside the label
+      // qualifier rather than allowing them to alter the search query.
+      const safeLabels = labels.map(label =>
+        label.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+      );
+      const labelQuery = !safeLabels.length
+        ? ""
+        : selectedMatch === "any"
+          ? `label:${safeLabels.map(label => `"${label}"`).join(",")}`
+          : safeLabels.map(label => `label:"${label}"`).join(" ");
+      const query = `is:issue${stateQuery}${assigneeQuery} (${repositoryQuery})${
+        labelQuery ? ` ${labelQuery}` : ""
+      }${sortQuery}`;
 
       return `https://github.com/issues?q=${encodeURIComponent(query)}`;
     }
