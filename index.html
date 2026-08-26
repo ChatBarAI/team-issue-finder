@@ -441,6 +441,20 @@
       gap: 11px;
     }
 
+    .dependabot-filter {
+      display: flex;
+      justify-content: flex-end;
+      margin: 16px 0 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .dependabot-filter .match-option {
+      width: auto;
+      color: var(--text);
+      font-weight: 600;
+    }
+
     .dialog-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -739,6 +753,12 @@
             All pull requests
           </label>
         </div>
+        <div class="dependabot-filter">
+          <label class="match-option">
+            <input type="checkbox" id="ignore-dependabot">
+            Ignore Dependabot pull requests
+          </label>
+        </div>
       </fieldset>
       <div class="dialog-actions">
         <button type="button" id="cancel-type">Cancel</button>
@@ -823,6 +843,7 @@
     const openTypeButton = document.querySelector("#open-type");
     const typeDialog = document.querySelector("#type-dialog");
     const typeSummary = document.querySelector("#type-summary");
+    const ignoreDependabotInput = document.querySelector("#ignore-dependabot");
     const cancelTypeButton = document.querySelector("#cancel-type");
     const applyTypeButton = document.querySelector("#apply-type");
     const openSortButton = document.querySelector("#open-sort");
@@ -855,6 +876,7 @@
       all: "All PRs"
     };
     let selectedResultType = "issues";
+    let ignoreDependabot = false;
     let selectedSort = "updated-desc";
     let selectedTitle = "";
     let excludePriority = false;
@@ -900,6 +922,7 @@
       typeDialog.querySelector(
         `[name="result-type"][value="${selectedResultType}"]`
       ).checked = true;
+      ignoreDependabotInput.checked = ignoreDependabot;
       typeDialog.showModal();
     });
 
@@ -907,7 +930,10 @@
 
     applyTypeButton.addEventListener("click", () => {
       selectedResultType = typeDialog.querySelector('[name="result-type"]:checked').value;
-      typeSummary.textContent = resultTypeLabels[selectedResultType];
+      ignoreDependabot = ignoreDependabotInput.checked;
+      typeSummary.textContent = `${resultTypeLabels[selectedResultType]}${
+        selectedResultType !== "issues" && ignoreDependabot ? " · no Dependabot" : ""
+      }`;
       typeDialog.close();
     });
 
@@ -1148,7 +1174,10 @@
         : selectedResultType === "requested"
           ? "is:pr user-review-requested:@me"
           : "is:pr";
-      const query = `${resultTypeQuery}${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
+      const authorQuery = selectedResultType !== "issues" && ignoreDependabot
+        ? " -author:app/dependabot"
+        : "";
+      const query = `${resultTypeQuery}${authorQuery}${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
         labelQuery ? ` ${labelQuery}` : ""
       }${priorityQuery}${sortQuery}`;
 
