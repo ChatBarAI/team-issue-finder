@@ -82,9 +82,13 @@
       gap: 6px;
     }
 
-    .page-logo {
+    .page-logo-link {
       display: block;
       flex: 0 0 auto;
+    }
+
+    .page-logo {
+      display: block;
       width: clamp(42px, 9vw, 54px);
       height: auto;
     }
@@ -443,13 +447,19 @@
           </span>
         </span>
       </div>
-      <img
-        class="page-logo"
-        src="assets/logo-icon.webp"
-        width="320"
-        height="320"
-        alt="ChatBar AI logo"
+      <a
+        class="page-logo-link"
+        href="https://github.com/brodjustice/Chatbar-AI-Pte-Issue-Tracker/blob/main/README.md"
+        aria-label="ChatBar AI Pte Issue Tracker repository"
       >
+        <img
+          class="page-logo"
+          src="assets/logo-icon.webp"
+          width="320"
+          height="320"
+          alt="ChatBar AI logo"
+        >
+      </a>
     </div>
 
     <form id="issue-search">
@@ -507,6 +517,7 @@
             list="label-suggestions"
             placeholder="Start typing or choose a label"
             autocomplete="off"
+            enterkeyhint="go"
             autofocus
           >
           <datalist id="label-suggestions"></datalist>
@@ -559,6 +570,7 @@
             placeholder="GitHub username or @me"
             autocomplete="off"
             autocapitalize="none"
+            enterkeyhint="go"
             spellcheck="false"
           >
         </div>
@@ -680,6 +692,20 @@
     const getIssueState = () => form.elements.state.value;
 
     assigneeInput.addEventListener("input", () => assigneeInput.setCustomValidity(""));
+
+    document.addEventListener("keydown", event => {
+      const hasModifier = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+      if (
+        event.key !== "Enter" ||
+        event.isComposing ||
+        event.repeat ||
+        hasModifier ||
+        sortDialog.open
+      ) return;
+
+      event.preventDefault();
+      form.requestSubmit();
+    });
 
     openSortButton.addEventListener("click", () => {
       sortDialog.querySelector(`[name="sort-option"][value="${selectedSort}"]`).checked = true;
