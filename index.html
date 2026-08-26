@@ -59,7 +59,7 @@
     }
 
     main {
-      width: min(100%, 720px);
+      width: min(100%, 760px);
       margin: 0 auto;
       padding: clamp(18px, 3vw, 28px);
       border: 1px solid var(--border);
@@ -292,13 +292,15 @@
       gap: 10px 16px;
     }
 
-    .match-sort-row .match-mode { flex: 1 1 400px; }
+    .match-sort-row .match-mode { flex: 1 1 210px; }
 
     .sort-control {
       display: flex;
-      flex-direction: column;
+      flex: 0 1 auto;
+      flex-flow: row nowrap;
+      min-width: 0;
       align-self: center;
-      align-items: flex-end;
+      align-items: center;
       justify-content: flex-end;
       gap: 6px;
       margin-left: auto;
@@ -311,6 +313,15 @@
       border-color: var(--border);
       border-radius: 999px;
       font-size: 0.78rem;
+    }
+
+    #title-summary {
+      display: inline-block;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: bottom;
+      white-space: nowrap;
     }
 
     button {
@@ -432,12 +443,14 @@
       margin-top: 22px;
     }
 
-    #apply-sort {
+    #apply-sort,
+    #apply-title {
       background: var(--accent);
       color: #fff;
     }
 
-    #apply-sort:hover { background: var(--accent-hover); }
+    #apply-sort:hover,
+    #apply-title:hover { background: var(--accent-hover); }
 
     details {
       margin-top: 24px;
@@ -451,6 +464,13 @@
     @media (max-width: 480px) {
       .filter-row { grid-template-columns: 1fr; }
       .buttons { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      .sort-control {
+        flex-direction: column;
+        align-items: flex-end;
+      }
     }
   </style>
 </head>
@@ -528,6 +548,15 @@
           </fieldset>
 
           <div class="sort-control">
+            <button
+              class="sort-trigger"
+              type="button"
+              id="open-title"
+              aria-haspopup="dialog"
+              aria-pressed="false"
+            >
+              Title: <span id="title-summary">Any</span>
+            </button>
             <button
               class="sort-trigger"
               type="button"
@@ -673,6 +702,27 @@
       </div>
     </dialog>
 
+    <dialog id="title-dialog" aria-labelledby="title-dialog-title">
+      <h2 id="title-dialog-title">Search issue titles</h2>
+      <div class="field">
+        <label for="title-filter">Title contains this phrase</label>
+        <input
+          id="title-filter"
+          type="text"
+          placeholder="For example, login failure"
+          autocomplete="off"
+          enterkeyhint="done"
+        >
+        <p class="field-help">
+          Leave this empty to include issues with any title.
+        </p>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="cancel-title">Cancel</button>
+        <button type="button" id="apply-title">Apply</button>
+      </div>
+    </dialog>
+
     <details>
       <summary>Repositories included</summary>
       <ul id="repository-list"></ul>
@@ -729,6 +779,12 @@
     const sortSummary = document.querySelector("#sort-summary");
     const cancelSortButton = document.querySelector("#cancel-sort");
     const applySortButton = document.querySelector("#apply-sort");
+    const openTitleButton = document.querySelector("#open-title");
+    const titleDialog = document.querySelector("#title-dialog");
+    const titleInput = document.querySelector("#title-filter");
+    const titleSummary = document.querySelector("#title-summary");
+    const cancelTitleButton = document.querySelector("#cancel-title");
+    const applyTitleButton = document.querySelector("#apply-title");
     const copyButton = document.querySelector("#copy-link");
     const statusMessage = document.querySelector("#status");
     const sectionPills = new Map();
@@ -742,6 +798,7 @@
       "reactions-desc": "Most reactions"
     };
     let selectedSort = "updated-desc";
+    let selectedTitle = "";
     const getLabelMatch = () => form.elements["label-match"].value;
     const getIssueState = () => form.elements.state.value;
 
@@ -766,10 +823,12 @@
       const hasModifier = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
       if (
         event.key !== "Enter" ||
+        event.defaultPrevented ||
         event.isComposing ||
         event.repeat ||
         hasModifier ||
-        sortDialog.open
+        sortDialog.open ||
+        titleDialog.open
       ) return;
 
       event.preventDefault();
@@ -788,6 +847,29 @@
       selectedSort = selectedOption.value;
       sortSummary.textContent = sortLabels[selectedSort];
       sortDialog.close();
+    });
+
+    openTitleButton.addEventListener("click", () => {
+      titleInput.value = selectedTitle;
+      titleDialog.showModal();
+      titleInput.focus();
+    });
+
+    cancelTitleButton.addEventListener("click", () => titleDialog.close());
+
+    function applyTitleFilter() {
+      selectedTitle = titleInput.value.trim();
+      titleSummary.textContent = selectedTitle || "Any";
+      openTitleButton.setAttribute("aria-pressed", String(Boolean(selectedTitle)));
+      titleDialog.close();
+    }
+
+    applyTitleButton.addEventListener("click", applyTitleFilter);
+
+    titleInput.addEventListener("keydown", event => {
+      if (event.key !== "Enter" || event.isComposing) return;
+      event.preventDefault();
+      applyTitleFilter();
     });
 
     for (const label of suggestedLabels) {
@@ -932,6 +1014,13 @@
           : "";
       const sortQuery = ` sort:${selectedSort}`;
 
+      // Quoting the title text makes it an exact phrase search, while escaping
+      // keeps it from changing the surrounding GitHub search qualifiers.
+      const safeTitle = selectedTitle
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"');
+      const titleQuery = safeTitle ? ` "${safeTitle}" in:title` : "";
+
       // Escaping quotes and backslashes keeps typed labels inside the label
       // qualifier rather than allowing them to alter the search query.
       const safeLabels = labels.map(label =>
@@ -942,7 +1031,7 @@
         : selectedMatch === "any"
           ? `label:${safeLabels.map(label => `"${label}"`).join(",")}`
           : safeLabels.map(label => `label:"${label}"`).join(" ");
-      const query = `is:issue${stateQuery}${assigneeQuery} (${repositoryQuery})${
+      const query = `is:issue${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
         labelQuery ? ` ${labelQuery}` : ""
       }${sortQuery}`;
 
