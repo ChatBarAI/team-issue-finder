@@ -808,6 +808,7 @@
       "WorkType: Legal",
       "WorkType: Research"
     ];
+    const priorityLabels = suggestedLabels.filter(label => label.startsWith("Priority: "));
 
     const form = document.querySelector("#issue-search");
     const labelInput = document.querySelector("#label");
@@ -856,6 +857,8 @@
     let selectedResultType = "issues";
     let selectedSort = "updated-desc";
     let selectedTitle = "";
+    let excludePriority = false;
+    let noPriorityButton;
     const getLabelMatch = () => form.elements["label-match"].value;
     const getIssueState = () => form.elements.state.value;
 
@@ -987,6 +990,8 @@
       pill.setAttribute("aria-label", label);
       pill.setAttribute("aria-pressed", "false");
       pill.addEventListener("click", () => {
+        if (priorityLabels.includes(label)) excludePriority = false;
+
         if (getLabelMatch() === "single") {
           selectedLabels.clear();
           selectedLabels.add(label);
@@ -1001,15 +1006,36 @@
       sectionPills.get(sectionName).append(pill);
     }
 
+    noPriorityButton = document.createElement("button");
+    noPriorityButton.type = "button";
+    noPriorityButton.className = "label-pill";
+    noPriorityButton.textContent = "No priority";
+    noPriorityButton.setAttribute("aria-label", "No priority label");
+    noPriorityButton.setAttribute("aria-pressed", "false");
+    noPriorityButton.addEventListener("click", () => {
+      excludePriority = !excludePriority;
+
+      if (excludePriority) {
+        for (const label of priorityLabels) selectedLabels.delete(label);
+        if (priorityLabels.includes(labelInput.value.trim())) labelInput.value = "";
+      }
+
+      statusMessage.textContent = "";
+      syncSelectedLabel();
+    });
+    sectionPills.get("Priority").append(noPriorityButton);
+
     function syncSelectedLabel() {
-      for (const pill of labelGroups.querySelectorAll(".label-pill")) {
+      for (const pill of labelGroups.querySelectorAll(".label-pill[data-label]")) {
         pill.setAttribute("aria-pressed", String(selectedLabels.has(pill.dataset.label)));
       }
+      noPriorityButton.setAttribute("aria-pressed", String(excludePriority));
     }
 
     labelInput.addEventListener("input", () => {
       selectedLabels.clear();
       const typedLabel = labelInput.value.trim();
+      if (priorityLabels.includes(typedLabel)) excludePriority = false;
       if (suggestedLabels.includes(typedLabel)) selectedLabels.add(typedLabel);
       syncSelectedLabel();
     });
@@ -1017,6 +1043,7 @@
     clearLabelsButton.addEventListener("click", () => {
       selectedLabels.clear();
       labelInput.value = "";
+      excludePriority = false;
       statusMessage.textContent = "";
       syncSelectedLabel();
     });
@@ -1113,6 +1140,9 @@
         : selectedMatch === "any"
           ? `label:${safeLabels.map(label => `"${label}"`).join(",")}`
           : safeLabels.map(label => `label:"${label}"`).join(" ");
+      const priorityQuery = excludePriority
+        ? priorityLabels.map(label => ` -label:"${label}"`).join("")
+        : "";
       const resultTypeQuery = selectedResultType === "issues"
         ? "is:issue"
         : selectedResultType === "requested"
@@ -1120,7 +1150,7 @@
           : "is:pr";
       const query = `${resultTypeQuery}${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
         labelQuery ? ` ${labelQuery}` : ""
-      }${sortQuery}`;
+      }${priorityQuery}${sortQuery}`;
 
       return `https://github.com/issues?q=${encodeURIComponent(query)}`;
     }
