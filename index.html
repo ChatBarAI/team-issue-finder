@@ -134,6 +134,27 @@
 
     .field-label-row label { margin-bottom: 0; }
 
+    .label-control { position: relative; }
+
+    .label-control #label { padding-right: 72px; }
+
+    #combined-label-help { padding-right: 72px; }
+
+    .clear-labels {
+      position: absolute;
+      z-index: 1;
+      top: 7px;
+      right: 7px;
+      width: auto;
+      min-height: 30px;
+      padding: 4px 10px;
+      border-color: var(--border);
+      border-radius: 999px;
+      font-size: 0.78rem;
+    }
+
+    #single-label-entry[hidden] ~ .clear-labels { top: -8px; }
+
     .match-mode {
       min-width: 0;
       margin: 0;
@@ -529,23 +550,28 @@
       </div>
 
       <div class="field">
-        <div id="single-label-entry">
-          <label for="label">Issue label</label>
-          <input
-            id="label"
-            name="label"
-            list="label-suggestions"
-            placeholder="Start typing or choose a label"
-            autocomplete="off"
-            enterkeyhint="go"
-            autofocus
-          >
-          <datalist id="label-suggestions"></datalist>
+        <label for="label">Issue label</label>
+        <div class="label-control">
+          <div id="single-label-entry">
+            <input
+              id="label"
+              name="label"
+              list="label-suggestions"
+              placeholder="Start typing or choose a label"
+              autocomplete="off"
+              enterkeyhint="go"
+              autofocus
+            >
+            <datalist id="label-suggestions"></datalist>
+          </div>
+          <p class="field-help" id="combined-label-help" hidden>
+            Select labels below. Click a selected label again to remove it.
+          </p>
+          <button class="clear-labels" type="button" id="clear-labels">
+            Clear
+          </button>
+          <div class="label-groups" id="label-groups"></div>
         </div>
-        <p class="field-help" id="combined-label-help" hidden>
-          Select labels below. Click a selected label again to remove it.
-        </p>
-        <div class="label-groups" id="label-groups"></div>
       </div>
 
       <div class="filter-row">
@@ -695,6 +721,7 @@
     const singleLabelEntry = document.querySelector("#single-label-entry");
     const combinedLabelHelp = document.querySelector("#combined-label-help");
     const labelGroups = document.querySelector("#label-groups");
+    const clearLabelsButton = document.querySelector("#clear-labels");
     const assigneeInput = document.querySelector("#assignee");
     const setUnassignedButton = document.querySelector("#set-unassigned");
     const openSortButton = document.querySelector("#open-sort");
@@ -823,7 +850,14 @@
       syncSelectedLabel();
     });
 
-    labelMatchOptions.addEventListener("change", () => {
+    clearLabelsButton.addEventListener("click", () => {
+      selectedLabels.clear();
+      labelInput.value = "";
+      statusMessage.textContent = "";
+      syncSelectedLabel();
+    });
+
+    function syncLabelMatchMode() {
       const selectedMatch = getLabelMatch();
       const isSingleLabel = selectedMatch === "single";
       singleLabelEntry.hidden = !isSingleLabel;
@@ -845,7 +879,11 @@
       }
 
       syncSelectedLabel();
-    });
+    }
+
+    labelMatchOptions.addEventListener("change", syncLabelMatchMode);
+    window.addEventListener("pageshow", syncLabelMatchMode);
+    syncLabelMatchMode();
 
     for (const repository of repositories) {
       const item = document.createElement("li");
