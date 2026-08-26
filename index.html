@@ -59,7 +59,7 @@
     }
 
     main {
-      width: min(100%, 760px);
+      width: min(100%, 800px);
       margin: 0 auto;
       padding: clamp(18px, 3vw, 28px);
       border: 1px solid var(--border);
@@ -292,7 +292,7 @@
       gap: 10px 16px;
     }
 
-    .match-sort-row .match-mode { flex: 1 1 210px; }
+    .match-sort-row .match-mode { flex: 1 1 190px; }
 
     .sort-control {
       display: flex;
@@ -453,12 +453,14 @@
     }
 
     #apply-sort,
+    #apply-type,
     #apply-title {
       background: var(--accent);
       color: #fff;
     }
 
     #apply-sort:hover,
+    #apply-type:hover,
     #apply-title:hover { background: var(--accent-hover); }
 
     details {
@@ -557,6 +559,14 @@
           </fieldset>
 
           <div class="sort-control">
+            <button
+              class="sort-trigger"
+              type="button"
+              id="open-type"
+              aria-haspopup="dialog"
+            >
+              Show: <span id="type-summary">Issues</span>
+            </button>
             <button
               class="sort-trigger"
               type="button"
@@ -711,8 +721,33 @@
       </div>
     </dialog>
 
+    <dialog id="type-dialog" aria-labelledby="type-dialog-title">
+      <h2 id="type-dialog-title">Choose what to show</h2>
+      <fieldset class="match-mode">
+        <legend class="visually-hidden">Choose what to show</legend>
+        <div class="sort-options">
+          <label class="match-option">
+            <input type="radio" name="result-type" value="issues" checked>
+            Issues
+          </label>
+          <label class="match-option">
+            <input type="radio" name="result-type" value="requested">
+            Pull requests awaiting my review
+          </label>
+          <label class="match-option">
+            <input type="radio" name="result-type" value="all">
+            All pull requests
+          </label>
+        </div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button type="button" id="cancel-type">Cancel</button>
+        <button type="button" id="apply-type">Apply</button>
+      </div>
+    </dialog>
+
     <dialog id="title-dialog" aria-labelledby="title-dialog-title">
-      <h2 id="title-dialog-title">Search issue titles</h2>
+      <h2 id="title-dialog-title">Search titles</h2>
       <div class="field">
         <label for="title-filter">Title contains this phrase</label>
         <input
@@ -784,6 +819,11 @@
     const clearLabelsButton = document.querySelector("#clear-labels");
     const assigneeInput = document.querySelector("#assignee");
     const setUnassignedButton = document.querySelector("#set-unassigned");
+    const openTypeButton = document.querySelector("#open-type");
+    const typeDialog = document.querySelector("#type-dialog");
+    const typeSummary = document.querySelector("#type-summary");
+    const cancelTypeButton = document.querySelector("#cancel-type");
+    const applyTypeButton = document.querySelector("#apply-type");
     const openSortButton = document.querySelector("#open-sort");
     const sortDialog = document.querySelector("#sort-dialog");
     const sortSummary = document.querySelector("#sort-summary");
@@ -808,6 +848,12 @@
       "comments-desc": "Most commented",
       "reactions-desc": "Most reactions"
     };
+    const resultTypeLabels = {
+      issues: "Issues",
+      requested: "My reviews",
+      all: "All PRs"
+    };
+    let selectedResultType = "issues";
     let selectedSort = "updated-desc";
     let selectedTitle = "";
     const getLabelMatch = () => form.elements["label-match"].value;
@@ -838,12 +884,28 @@
         event.isComposing ||
         event.repeat ||
         hasModifier ||
+        typeDialog.open ||
         sortDialog.open ||
         titleDialog.open
       ) return;
 
       event.preventDefault();
       form.requestSubmit();
+    });
+
+    openTypeButton.addEventListener("click", () => {
+      typeDialog.querySelector(
+        `[name="result-type"][value="${selectedResultType}"]`
+      ).checked = true;
+      typeDialog.showModal();
+    });
+
+    cancelTypeButton.addEventListener("click", () => typeDialog.close());
+
+    applyTypeButton.addEventListener("click", () => {
+      selectedResultType = typeDialog.querySelector('[name="result-type"]:checked').value;
+      typeSummary.textContent = resultTypeLabels[selectedResultType];
+      typeDialog.close();
     });
 
     openSortButton.addEventListener("click", () => {
@@ -1051,7 +1113,12 @@
         : selectedMatch === "any"
           ? `label:${safeLabels.map(label => `"${label}"`).join(",")}`
           : safeLabels.map(label => `label:"${label}"`).join(" ");
-      const query = `is:issue${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
+      const resultTypeQuery = selectedResultType === "issues"
+        ? "is:issue"
+        : selectedResultType === "requested"
+          ? "is:pr user-review-requested:@me"
+          : "is:pr";
+      const query = `${resultTypeQuery}${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
         labelQuery ? ` ${labelQuery}` : ""
       }${sortQuery}`;
 
