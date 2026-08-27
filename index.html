@@ -136,7 +136,10 @@
 
     .label-control { position: relative; }
 
-    .label-control #label { padding-right: 72px; }
+    .label-control #label {
+      margin-bottom: 6px;
+      padding-right: 72px;
+    }
 
     #combined-label-help { padding-right: 72px; }
 
@@ -360,16 +363,45 @@
     }
 
     .label-groups {
-      display: grid;
+      container-type: inline-size;
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: 12px;
     }
 
     .label-group {
+      flex: 1 1 100%;
       min-width: 0;
       margin: 0;
       padding: 0;
       border: 0;
+    }
+
+    .label-group[data-section="Priority"] {
+      flex: 1 0 400px;
+      max-width: 100%;
+    }
+
+    .label-group[data-section="General"] {
+      flex: 0 0 auto;
+      max-width: 100%;
+      margin-left: auto;
+    }
+
+    .label-group[data-section="General"] legend {
+      width: 100%;
+      text-align: right;
+    }
+
+    @container (max-width: 540px) {
+      .label-group[data-section="General"] {
+        margin-left: 0;
+      }
+
+      .label-group[data-section="General"] legend {
+        text-align: left;
+      }
     }
 
     .label-group legend {
@@ -516,11 +548,11 @@
             role="tooltip"
           >
             <strong>Use these exact labels:</strong>
+            <span>Priority: Critical · Priority: High · Priority: Medium · Priority: Low</span>
             <span>Announcements</span>
-            <span>Priority: High · Priority: Low · Priority: Medium</span>
-            <span>Status: Backlog · Status: Blocked · Status: Done · Status: In-progress · Status: Review</span>
-            <span>Team: Business · Team: Client · Team: Legal · Team: Marketing · Team: Product</span>
-            <span>WorkType: Bug · WorkType: Design · WorkType: Documentation · WorkType: Enhancement · WorkType: Feature · WorkType: Legal · WorkType: Research</span>
+            <span>Status: Backlog · Status: Blocked · Status: In-progress · Status: Review</span>
+            <span>Team: Client · Team: Legal · Team: Marketing · Team: Product</span>
+            <span>WorkType: Bug · WorkType: Design · WorkType: Documentation · WorkType: Enhancement · WorkType: Feature · WorkType: Research</span>
           </span>
         </span>
       </div>
@@ -806,16 +838,15 @@
     // Canonical labels used by the team. Users can still type a label that
     // is not included here when searching older or external issues.
     const suggestedLabels = [
-      "Announcements",
+      "Priority: Critical",
       "Priority: High",
-      "Priority: Low",
       "Priority: Medium",
+      "Priority: Low",
+      "Announcements",
       "Status: Backlog",
       "Status: Blocked",
-      "Status: Done",
       "Status: In-progress",
       "Status: Review",
-      "Team: Business",
       "Team: Client",
       "Team: Legal",
       "Team: Marketing",
@@ -825,7 +856,6 @@
       "WorkType: Documentation",
       "WorkType: Enhancement",
       "WorkType: Feature",
-      "WorkType: Legal",
       "WorkType: Research"
     ];
     const priorityLabels = suggestedLabels.filter(label => label.startsWith("Priority: "));
@@ -996,6 +1026,7 @@
       if (!sectionPills.has(sectionName)) {
         const group = document.createElement("fieldset");
         group.className = "label-group";
+        group.dataset.section = sectionName;
 
         const legend = document.createElement("legend");
         legend.textContent = sectionName;
@@ -1035,8 +1066,8 @@
     noPriorityButton = document.createElement("button");
     noPriorityButton.type = "button";
     noPriorityButton.className = "label-pill";
-    noPriorityButton.textContent = "No priority";
-    noPriorityButton.setAttribute("aria-label", "No priority label");
+    noPriorityButton.textContent = "No Priority";
+    noPriorityButton.setAttribute("aria-label", "No Priority label");
     noPriorityButton.setAttribute("aria-pressed", "false");
     noPriorityButton.addEventListener("click", () => {
       excludePriority = !excludePriority;
