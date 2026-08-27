@@ -104,7 +104,7 @@
 
     .filter-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
+      grid-template-columns: minmax(230px, 1fr) repeat(2, minmax(180px, 0.8fr));
       gap: 18px;
       margin-bottom: 16px;
     }
@@ -518,8 +518,11 @@
     summary { cursor: pointer; }
     ul { padding-left: 22px; }
 
-    @media (max-width: 480px) {
+    @media (max-width: 700px) {
       .filter-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
       .buttons { grid-template-columns: 1fr; }
     }
 
@@ -721,6 +724,36 @@
             <option value="unassigned"></option>
           </datalist>
         </div>
+
+        <div class="field">
+          <div class="field-label-row">
+            <label for="creator">Created by (optional)</label>
+            <span
+              class="help-tooltip"
+              tabindex="0"
+              aria-label="About the issue creator"
+              aria-describedby="creator-help"
+            >?
+              <span class="help-tooltip-text" id="creator-help" role="tooltip">
+                Enter the creator's GitHub username (login), not their display name.
+                Use @me for issues created by your signed-in GitHub account.
+              </span>
+            </span>
+          </div>
+          <input
+            id="creator"
+            name="creator"
+            list="creator-suggestions"
+            placeholder="Username or @me"
+            autocomplete="off"
+            autocapitalize="none"
+            enterkeyhint="go"
+            spellcheck="false"
+          >
+          <datalist id="creator-suggestions">
+            <option value="@me"></option>
+          </datalist>
+        </div>
       </div>
 
       <div class="buttons">
@@ -875,6 +908,7 @@
     const labelGroups = document.querySelector("#label-groups");
     const clearLabelsButton = document.querySelector("#clear-labels");
     const assigneeInput = document.querySelector("#assignee");
+    const creatorInput = document.querySelector("#creator");
     const setUnassignedButton = document.querySelector("#set-unassigned");
     const openTypeButton = document.querySelector("#open-type");
     const typeDialog = document.querySelector("#type-dialog");
@@ -1160,9 +1194,25 @@
       const isValidAssignee = !typedAssignee || isUnassigned || assignee === "@me" ||
         /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(assignee);
 
+      assigneeInput.setCustomValidity("");
       if (!isValidAssignee) {
         assigneeInput.setCustomValidity("Enter a GitHub username, @me, or unassigned.");
         assigneeInput.reportValidity();
+        return null;
+      }
+
+      const typedCreator = creatorInput.value.trim();
+      const normalizedCreator = typedCreator.toLowerCase();
+      const creator = normalizedCreator === "@me"
+        ? "@me"
+        : typedCreator.replace(/^@/, "");
+      const isValidCreator = !typedCreator || creator === "@me" ||
+        /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(creator);
+
+      creatorInput.setCustomValidity("");
+      if (!isValidCreator) {
+        creatorInput.setCustomValidity("Enter a GitHub username or @me.");
+        creatorInput.reportValidity();
         return null;
       }
 
@@ -1184,6 +1234,7 @@
         : assignee
           ? ` assignee:${assignee}`
           : "";
+      const creatorQuery = creator ? ` author:${creator}` : "";
       const sortQuery = ` sort:${selectedSort}`;
 
       // Quoting the title text makes it an exact phrase search, while escaping
@@ -1211,10 +1262,10 @@
         : selectedResultType === "requested"
           ? "is:pr user-review-requested:@me"
           : "is:pr";
-      const authorQuery = selectedResultType !== "issues" && ignoreDependabot
+      const dependabotQuery = selectedResultType !== "issues" && ignoreDependabot
         ? " -author:app/dependabot"
         : "";
-      const query = `${resultTypeQuery}${authorQuery}${stateQuery}${assigneeQuery}${titleQuery} (${repositoryQuery})${
+      const query = `${resultTypeQuery}${dependabotQuery}${stateQuery}${assigneeQuery}${creatorQuery}${titleQuery} (${repositoryQuery})${
         labelQuery ? ` ${labelQuery}` : ""
       }${priorityQuery}${sortQuery}`;
 
