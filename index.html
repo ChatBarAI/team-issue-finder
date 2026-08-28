@@ -282,7 +282,7 @@
 
     .buttons {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 20px;
     }
@@ -500,14 +500,112 @@
 
     #apply-sort,
     #apply-type,
-    #apply-title {
+    #apply-title,
+    #generate-timeline {
       background: var(--accent);
       color: #fff;
     }
 
     #apply-sort:hover,
     #apply-type:hover,
-    #apply-title:hover { background: var(--accent-hover); }
+    #apply-title:hover,
+    #generate-timeline:hover { background: var(--accent-hover); }
+
+    #timeline-dialog {
+      width: min(94vw, 760px);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .timeline-intro { margin-top: -8px; }
+
+    .timeline-settings {
+      display: grid;
+      grid-template-columns: minmax(150px, 0.6fr) minmax(260px, 1.4fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .timeline-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .timeline-results {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .timeline-results h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+    }
+
+    .timeline-summary {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .timeline-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: minmax(130px, 0.45fr) minmax(0, 1.55fr);
+      gap: 12px;
+      padding: 11px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .timeline-dates {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .timeline-issue { min-width: 0; }
+
+    .timeline-issue a {
+      color: var(--accent);
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      text-decoration: none;
+    }
+
+    .timeline-issue a:hover { text-decoration: underline; }
+
+    .timeline-meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .timeline-notes {
+      margin: 18px 0 0;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .timeline-notes summary { font-weight: 600; }
+
+    .timeline-empty {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .timeline-error {
+      color: #cf222e;
+    }
 
     details {
       margin-top: 24px;
@@ -524,6 +622,9 @@
 
     @media (max-width: 480px) {
       .buttons { grid-template-columns: 1fr; }
+
+      .timeline-settings,
+      .timeline-item { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 700px) {
@@ -759,6 +860,7 @@
       <div class="buttons">
         <button type="submit">Open in GitHub</button>
         <button type="button" id="copy-link">Copy link</button>
+        <button type="button" id="open-timeline">Draft timeline</button>
       </div>
 
       <p id="status" role="status" aria-live="polite"></p>
@@ -854,6 +956,54 @@
       </div>
     </dialog>
 
+    <dialog id="timeline-dialog" aria-labelledby="timeline-dialog-title">
+      <h2 id="timeline-dialog-title">Draft issue timeline</h2>
+      <p class="field-help timeline-intro">
+        Uses the current filters and schedules one 8-hour workday at a time,
+        from highest to lowest priority. Weekends are skipped.
+      </p>
+      <div class="timeline-settings">
+        <div class="field">
+          <label for="timeline-start">Start date</label>
+          <input id="timeline-start" type="date">
+        </div>
+        <div class="field">
+          <div class="field-label-row">
+            <label for="github-token">GitHub token</label>
+            <span
+              class="help-tooltip"
+              tabindex="0"
+              aria-label="About the GitHub token"
+              aria-describedby="github-token-help"
+            >?
+              <span class="help-tooltip-text" id="github-token-help" role="tooltip">
+                Browser sign-in cannot authenticate API requests from this app.
+                Use a fine-grained token with read-only Issues access for private
+                repositories. It stays in memory and is never saved.
+              </span>
+            </span>
+          </div>
+          <input
+            id="github-token"
+            type="password"
+            placeholder="Required for private repositories"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+      </div>
+      <div class="timeline-actions">
+        <button type="button" id="close-timeline">Close</button>
+        <button type="button" id="generate-timeline">Generate draft</button>
+      </div>
+      <div
+        class="timeline-results"
+        id="timeline-results"
+        aria-live="polite"
+        hidden
+      ></div>
+    </dialog>
+
     <details>
       <summary>Repositories included</summary>
       <ul id="repository-list"></ul>
@@ -929,6 +1079,13 @@
     const clearTitleButton = document.querySelector("#clear-title");
     const applyTitleButton = document.querySelector("#apply-title");
     const copyButton = document.querySelector("#copy-link");
+    const openTimelineButton = document.querySelector("#open-timeline");
+    const timelineDialog = document.querySelector("#timeline-dialog");
+    const timelineStartInput = document.querySelector("#timeline-start");
+    const githubTokenInput = document.querySelector("#github-token");
+    const closeTimelineButton = document.querySelector("#close-timeline");
+    const generateTimelineButton = document.querySelector("#generate-timeline");
+    const timelineResults = document.querySelector("#timeline-results");
     const statusMessage = document.querySelector("#status");
     const sectionPills = new Map();
     const selectedLabels = new Set();
@@ -944,6 +1101,19 @@
       issues: "Issues",
       requested: "My reviews",
       all: "All PRs"
+    };
+    const priorityRanks = {
+      "Priority: Critical": 0,
+      "Priority: High": 1,
+      "Priority: Medium": 2,
+      "Priority: Low": 3
+    };
+    const effortHours = {
+      "Effort: 4 hrs": 4,
+      "Effort: 1 day": 8,
+      "Effort: 2 days": 16,
+      "Effort: 5 days": 40,
+      "Effort: 30 days": 240
     };
     let selectedResultType = "issues";
     let ignoreDependabot = false;
@@ -981,7 +1151,8 @@
         hasModifier ||
         typeDialog.open ||
         sortDialog.open ||
-        titleDialog.open
+        titleDialog.open ||
+        timelineDialog.open
       ) return;
 
       event.preventDefault();
@@ -1004,6 +1175,10 @@
       typeSummary.textContent = `${resultTypeLabels[selectedResultType]}${
         selectedResultType !== "issues" && ignoreDependabot ? " · no Dependabot" : ""
       }`;
+      openTimelineButton.disabled = selectedResultType !== "issues";
+      openTimelineButton.title = selectedResultType === "issues"
+        ? ""
+        : "Draft timelines are available for issues.";
       typeDialog.close();
     });
 
@@ -1182,7 +1357,7 @@
       document.querySelector("#repository-list").append(item);
     }
 
-    function buildGitHubUrl() {
+    function buildGitHubQuery() {
       statusMessage.textContent = "";
 
       const typedAssignee = assigneeInput.value.trim();
@@ -1269,8 +1444,294 @@
         labelQuery ? ` ${labelQuery}` : ""
       }${priorityQuery}${sortQuery}`;
 
-      return `https://github.com/issues?q=${encodeURIComponent(query)}`;
+      return query;
     }
+
+    function buildGitHubUrl() {
+      const query = buildGitHubQuery();
+      return query ? `https://github.com/issues?q=${encodeURIComponent(query)}` : null;
+    }
+
+    function localDateValue(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function nextWorkday(date) {
+      const result = new Date(date);
+      while (result.getDay() === 0 || result.getDay() === 6) {
+        result.setDate(result.getDate() + 1);
+      }
+      return result;
+    }
+
+    function addCalendarDay(date) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + 1);
+      return result;
+    }
+
+    function createDraftSchedule(issues, startDate) {
+      const schedulable = [];
+      const needsEstimate = [];
+
+      for (const issue of issues) {
+        const labelNames = issue.labels.map(label => label.name);
+        const priorityLabel = labelNames.find(label => label in priorityRanks);
+        const effortLabel = labelNames.find(label => label in effortHours);
+
+        if (!priorityLabel || !effortLabel) {
+          needsEstimate.push({ issue, priorityLabel, effortLabel });
+          continue;
+        }
+
+        schedulable.push({
+          issue,
+          priorityLabel,
+          effortLabel,
+          priorityRank: priorityRanks[priorityLabel],
+          hours: effortHours[effortLabel]
+        });
+      }
+
+      schedulable.sort((left, right) =>
+        left.priorityRank - right.priorityRank ||
+        new Date(left.issue.created_at) - new Date(right.issue.created_at)
+      );
+
+      let cursor = nextWorkday(startDate);
+      let availableHours = 8;
+      const scheduled = schedulable.map(item => {
+        const itemStart = new Date(cursor);
+        let itemEnd = new Date(cursor);
+        let remainingHours = item.hours;
+
+        while (remainingHours > 0) {
+          const assignedHours = Math.min(remainingHours, availableHours);
+          remainingHours -= assignedHours;
+          availableHours -= assignedHours;
+          itemEnd = new Date(cursor);
+
+          if (availableHours === 0) {
+            cursor = nextWorkday(addCalendarDay(cursor));
+            availableHours = 8;
+          }
+        }
+
+        return { ...item, start: itemStart, end: itemEnd };
+      });
+
+      return { scheduled, needsEstimate };
+    }
+
+    function appendTimelineIssue(list, item, dates) {
+      const row = document.createElement("li");
+      row.className = "timeline-item";
+
+      const dateText = document.createElement("div");
+      dateText.className = "timeline-dates";
+      dateText.textContent = dates;
+      row.append(dateText);
+
+      const issueDetails = document.createElement("div");
+      issueDetails.className = "timeline-issue";
+
+      const link = document.createElement("a");
+      link.href = item.issue.html_url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      const repository = item.issue.repository_url.split("/").slice(-2).join("/");
+      link.textContent = `${repository}#${item.issue.number} · ${item.issue.title}`;
+      issueDetails.append(link);
+
+      const meta = document.createElement("div");
+      meta.className = "timeline-meta";
+      meta.textContent = [item.priorityLabel, item.effortLabel].filter(Boolean).join(" · ");
+      issueDetails.append(meta);
+      row.append(issueDetails);
+      list.append(row);
+    }
+
+    function renderDraftTimeline(issues, startDate, incompleteResults, inaccessibleCount) {
+      const { scheduled, needsEstimate } = createDraftSchedule(issues, startDate);
+      const dateFormatter = new Intl.DateTimeFormat(undefined, {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+
+      timelineResults.replaceChildren();
+      const heading = document.createElement("h3");
+      heading.textContent = "Proposed order";
+      timelineResults.append(heading);
+
+      const summary = document.createElement("p");
+      summary.className = "timeline-summary";
+      const totalHours = scheduled.reduce((sum, item) => sum + item.hours, 0);
+      summary.textContent = `${scheduled.length} scheduled · ${totalHours / 8} workdays · ${
+        needsEstimate.length
+      } need labels${
+        inaccessibleCount ? ` · ${inaccessibleCount} repositories inaccessible` : ""
+      }${incompleteResults ? " · GitHub reported incomplete results" : ""}`;
+      timelineResults.append(summary);
+
+      if (scheduled.length) {
+        const list = document.createElement("ol");
+        list.className = "timeline-list";
+        for (const item of scheduled) {
+          const startText = dateFormatter.format(item.start);
+          const endText = dateFormatter.format(item.end);
+          appendTimelineIssue(
+            list,
+            item,
+            startText === endText ? startText : `${startText} – ${endText}`
+          );
+        }
+        timelineResults.append(list);
+      } else {
+        const empty = document.createElement("p");
+        empty.className = "timeline-empty";
+        empty.textContent = "No matching issues have both a priority and an effort label.";
+        timelineResults.append(empty);
+      }
+
+      if (needsEstimate.length) {
+        const notes = document.createElement("details");
+        notes.className = "timeline-notes";
+        const notesSummary = document.createElement("summary");
+        notesSummary.textContent = `${needsEstimate.length} issues need priority or effort labels`;
+        notes.append(notesSummary);
+
+        const list = document.createElement("ul");
+        list.className = "timeline-list";
+        for (const item of needsEstimate) {
+          const missing = [
+            item.priorityLabel ? null : "missing priority",
+            item.effortLabel ? null : "missing effort"
+          ].filter(Boolean).join(" and ");
+          appendTimelineIssue(list, item, missing);
+        }
+        notes.append(list);
+        timelineResults.append(notes);
+      }
+
+      timelineResults.hidden = false;
+    }
+
+    async function fetchTimelineIssues(query, token) {
+      const headers = {
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const issues = [];
+      let incompleteResults = false;
+      let inaccessibleCount = 0;
+      const baseQuery = query.replace(/ sort:[^ ]+$/, "");
+
+      for (const repository of repositories) {
+        const repositoryQuery = baseQuery.replace(
+          / \(repo:[^)]+\)/,
+          ` repo:${repository}`
+        );
+        let page = 1;
+        let retrievedCount = 0;
+        let totalCount = 0;
+
+        do {
+          const url = new URL("https://api.github.com/search/issues");
+          url.searchParams.set("q", repositoryQuery);
+          url.searchParams.set("per_page", "100");
+          url.searchParams.set("page", String(page));
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
+            if (response.status === 401) throw new Error("GitHub rejected that token.");
+            if (response.status === 422 && !token) {
+              inaccessibleCount += 1;
+              break;
+            }
+            if (response.status === 422) {
+              throw new Error(
+                `The token cannot access ${repository}, or its organization has not authorized it.`
+              );
+            }
+            if (response.status === 403) {
+              throw new Error("GitHub denied the request or the API rate limit was reached.");
+            }
+            throw new Error(`GitHub could not load the issues (HTTP ${response.status}).`);
+          }
+
+          const payload = await response.json();
+          totalCount = Math.min(payload.total_count, 1000);
+          retrievedCount += payload.items.length;
+          incompleteResults ||= payload.incomplete_results;
+          issues.push(...payload.items.filter(item => !item.pull_request));
+          page += 1;
+        } while (retrievedCount < totalCount && page <= 10);
+      }
+
+      return { issues, incompleteResults, inaccessibleCount };
+    }
+
+    openTimelineButton.addEventListener("click", () => {
+      timelineStartInput.value ||= localDateValue(new Date());
+      timelineResults.hidden = true;
+      timelineResults.replaceChildren();
+      timelineDialog.showModal();
+    });
+
+    closeTimelineButton.addEventListener("click", () => timelineDialog.close());
+
+    generateTimelineButton.addEventListener("click", async () => {
+      const query = buildGitHubQuery();
+      if (!query) return;
+
+      const startDate = new Date(`${timelineStartInput.value}T00:00:00`);
+      if (!timelineStartInput.value || Number.isNaN(startDate.valueOf())) {
+        timelineStartInput.setCustomValidity("Choose a valid start date.");
+        timelineStartInput.reportValidity();
+        return;
+      }
+      timelineStartInput.setCustomValidity("");
+
+      generateTimelineButton.disabled = true;
+      generateTimelineButton.textContent = "Loading issues…";
+      timelineResults.hidden = false;
+      timelineResults.replaceChildren();
+      const loading = document.createElement("p");
+      loading.className = "timeline-empty";
+      loading.textContent = "Loading matching issues from GitHub…";
+      timelineResults.append(loading);
+
+      try {
+        const result = await fetchTimelineIssues(query, githubTokenInput.value.trim());
+        if (result.inaccessibleCount) {
+          throw new Error(
+            `Timeline not generated: ${result.inaccessibleCount} of ${
+              repositories.length
+            } repositories are inaccessible. Browser GitHub sign-in cannot authorize API calls from this site; enter a read-only token that can access every repository.`
+          );
+        }
+        renderDraftTimeline(
+          result.issues,
+          startDate,
+          result.incompleteResults,
+          result.inaccessibleCount
+        );
+      } catch (error) {
+        const message = document.createElement("p");
+        message.className = "timeline-error";
+        message.textContent = error.message;
+        timelineResults.replaceChildren(message);
+      } finally {
+        generateTimelineButton.disabled = false;
+        generateTimelineButton.textContent = "Generate draft";
+      }
+    });
 
     form.addEventListener("submit", event => {
       event.preventDefault();
